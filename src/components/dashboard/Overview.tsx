@@ -107,7 +107,7 @@ export default function Overview() {
                 Check Symptoms
               </Button>
               <Button 
-                className="h-20 flex flex-col items-center justify-center text-base font-semibold cursor-not-allowed" 
+                className="h-20 flex flex-col items-center justify-center text-base font-semibold" 
                 variant="outline"
                 disabled
                 onClick={handleHealthAssistant}
