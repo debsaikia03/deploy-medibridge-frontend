@@ -1,11 +1,12 @@
 import { FaGithub } from 'react-icons/fa';
 
 const team = [
-  { name: 'Debangshu Saikia', github: 'https://github.com/debsaikia03' },
-  { name: 'Gaurav Chanda', github: 'https://github.com/banerjeesoumya' },
+  { name: 'Arka Kundu', github: 'https://github.com/Arka056' },
   { name: 'Bornik Dekaviraj', github: 'https://github.com/Bornik03' },
   { name: 'Chinmoy Kalita', github: 'https://github.com/chinmoykalita03' },
-  { name: 'Arka Kundu', github: 'https://github.com/Arka056' }
+  { name: 'Debangshu Saikia', github: 'https://github.com/debsaikia03' },
+  { name: 'Dev Shubhankar', github: 'https://github.com/Cout-dev' },
+  { name: 'Gaurav Chanda', github: 'https://github.com/banerjeesoumya' },
 ];
 
 export default function Footer() {
