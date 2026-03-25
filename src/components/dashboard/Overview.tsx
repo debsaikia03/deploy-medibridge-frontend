@@ -109,7 +109,6 @@ export default function Overview() {
               <Button 
                 className="h-20 flex flex-col items-center justify-center text-base font-semibold" 
                 variant="outline"
-                disabled
                 onClick={handleHealthAssistant}
               >
                 <MessageSquare className="mb-2 h-6 w-6" />
