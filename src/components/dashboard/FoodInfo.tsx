@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { toast } from 'sonner';
 import axios from '../../lib/axios';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -28,6 +29,10 @@ interface HealthScore {
   foodName: string;
 }
 
+const COUNTRIES = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "South Korea", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe", "World"
+];
+
 export default function FoodInfo() {
   const [tab, setTab] = useState<'name' | 'barcode'>('name');
   const [foodName, setFoodName] = useState('');
@@ -38,6 +43,7 @@ export default function FoodInfo() {
   const [loading, setLoading] = useState(false);
   const [userMetrics] = useState({ age: 30, height: 170, weight: 70 });
   const [notFound, setNotFound] = useState(false);
+  const [country, setCountry] = useState('India');
   
   // States for handling confirmations
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -83,7 +89,7 @@ export default function FoodInfo() {
     }
   };
 
-  const fetchFoodInfo = async (foodName?: string, codeToSearch?: string) => {
+  const fetchFoodInfo = async (foodName?: string, codeToSearch?: string, region?: string) => {
     setLoading(true);
     setFoodInfo(null);
     setHealthScore(null);
@@ -91,8 +97,8 @@ export default function FoodInfo() {
     if (codeToSearch) setBarcode(codeToSearch);
 
     try {
-      const foodRes = await axios.get('/food/info', { params: { foodName, barcode: codeToSearch } });
-      setFoodInfo(foodRes.data.foodInfo);
+      const foodRes = await axios.get('/food/info', { params: { foodName, barcode: codeToSearch, country: region } });
+      setFoodInfo(foodRes.data.data || foodRes.data.foodInfo);
       
       const scoreRes = await axios.get('/food/health', {
         params: { foodName, barcode: codeToSearch, ...userMetrics },
@@ -222,7 +228,7 @@ export default function FoodInfo() {
           <Tabs value={tab} onValueChange={handleTabChange} className="mb-4">
             <TabsList className="w-full grid grid-cols-2 mb-4">
               <TabsTrigger value="name">Enter Food Name</TabsTrigger>
-              <TabsTrigger value="barcode">Scan Barcode</TabsTrigger>
+              <TabsTrigger value="barcode">Search Barcode</TabsTrigger>
             </TabsList>
             
             <TabsContent value="name">
@@ -247,67 +253,60 @@ export default function FoodInfo() {
             </TabsContent>
 
             <TabsContent value="barcode">
-              <div className="flex flex-col items-center gap-6 mt-4">
-                
-                {/* 1. DEFAULT VIEW */}
-                {!scanning && !pendingFile && !pendingBarcode && (
-                  <div className="flex flex-wrap justify-center gap-4">
-                    <Button onClick={startScanning} disabled={loading}>
-                      Start Camera Scan
-                    </Button>
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={loading}>
-                      Upload Image
-                    </Button>
-                    <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleFileSelect} />
-                  </div>
-                )}
-
-                {/* 2. CAMERA VIEW */}
-                <div className={scanning ? 'flex flex-col items-center w-full' : 'hidden'}>
-                  <div id="qr-reader" className="w-full max-w-md overflow-hidden rounded-xl border-2"></div>
-                  <Button variant="outline" className="mt-4" onClick={stopScanning}>
-                    Cancel Camera
-                  </Button>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!barcode.trim()) return toast.error('Enter a barcode');
+                  if (!/^\d+$/.test(barcode.trim())) return toast.error('Barcode must be a valid integer');
+                  if (barcode.trim().length !== 13) return toast.error('Invalid barcode: must be exactly 13 digits');
+                  fetchFoodInfo(undefined, barcode.trim(), country);
+                }}
+                className="flex flex-col gap-5 mt-4"
+              >
+                {/* 1. Custom Region Dropdown */}
+                <div className="flex flex-col gap-2 text-left">
+                  <label className="text-sm font-semibold">Region</label>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger className="w-full text-left font-normal bg-background">
+                      <SelectValue placeholder="Select a region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* 3. PENDING CAMERA CONFIRMATION */}
-                {pendingBarcode && (
-                  <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto p-6 border rounded-xl bg-muted/30 text-center shadow-sm">
-                    <p className="font-medium text-muted-foreground">Barcode Detected</p>
-                    <p className="text-2xl font-bold tracking-widest bg-background py-3 px-6 rounded-lg border shadow-inner">
-                      {pendingBarcode}
-                    </p>
-                    <div className="flex gap-4 mt-2">
-                      <Button onClick={confirmCameraScan} disabled={loading}>
-                        Accept & Search
-                      </Button>
-                      <Button variant="outline" onClick={cancelCameraScan} disabled={loading}>
-                        Rescan
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                {/* 2. Barcode Input */}
+                <div className="flex flex-col gap-2 text-left">
+                  <label className="text-sm font-semibold">Barcode Number</label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={13}
+                    value={barcode}
+                    placeholder="Enter a 13-digit GSTIN number"
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d{1,13}$/.test(val)) {
+                        setBarcode(val);
+                      }
+                    }}
+                    className="w-full"
+                  />
+                </div>
 
-                {/* 4. PENDING IMAGE CONFIRMATION */}
-                {pendingFile && previewUrl && (
-                  <div className="flex flex-col items-center gap-4 w-full text-center">
-                    <p className="font-medium text-muted-foreground">Confirm Image</p>
-                    <img src={previewUrl} alt="Preview" className="w-48 h-48 object-cover rounded-xl border shadow-sm" />
-                    <div className="flex gap-4">
-                      <Button onClick={confirmImageUpload} disabled={loading}>
-                        {loading ? 'Processing...' : 'Accept & Scan'}
-                      </Button>
-                      <Button variant="outline" onClick={clearPreview} disabled={loading}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {barcode && !scanning && !pendingFile && !pendingBarcode && (
-                  <div className="text-muted-foreground text-sm">Last searched barcode: {barcode}</div>
-                )}
-              </div>
+                {/* 3. Search Button */}
+                <Button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="w-full bg-[hsl(220,90%,48%)] hover:bg-[hsl(220,90%,38%)] text-white"
+                >
+                  {loading ? 'Searching...' : 'Run Search'}
+                </Button>
+              </form>
             </TabsContent>
           </Tabs>
 
@@ -315,8 +314,14 @@ export default function FoodInfo() {
           {foodInfo && (
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>{foodInfo.name}</CardTitle>
-                <CardDescription>{foodInfo.brands} &bull; {foodInfo.quantity}</CardDescription>
+                <CardTitle className="text-2xl font-bold text-[#0082c5]">{foodInfo.name}</CardTitle>
+                <CardDescription className="text-base mt-2">
+                  {foodInfo.quantity !== 'Not available' ? `Per ${foodInfo.quantity} - ` : ''}
+                  Calories: {foodInfo.nutrition?.energy_100g || 0}kcal | 
+                  Fat: {foodInfo.nutrition?.fat_100g || 0}g | 
+                  Carbs: {foodInfo.nutrition?.carbohydrates_100g || 0}g | 
+                  Protein: {foodInfo.nutrition?.proteins_100g || 0}g
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-4 flex-wrap items-start">
