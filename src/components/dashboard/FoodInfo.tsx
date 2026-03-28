@@ -151,7 +151,7 @@ export default function FoodInfo() {
                 <Input
                   value={barcode}
                   maxLength={13}
-                  placeholder="Enter 13-digit GSTIN barcode"
+                  placeholder="Enter 13-digit GTIN barcode"
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val === '' || /^\d{1,13}$/.test(val)) setBarcode(val);
