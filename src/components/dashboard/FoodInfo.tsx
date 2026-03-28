@@ -163,20 +163,20 @@ export default function FoodInfo() {
     }
   };
 
-  const confirmCameraScan = () => {
+  /*const confirmCameraScan = () => {
     if (!pendingBarcode) return;
     const code = pendingBarcode;
     setPendingBarcode(null);
     fetchFoodInfo(undefined, code);
-  };
+  };*/
 
-  const cancelCameraScan = () => {
+  /*const cancelCameraScan = () => {
     setPendingBarcode(null);
     startScanning(); 
-  };
+  };*/
 
   // --- IMAGE UPLOAD FLOW ---
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /*const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -186,9 +186,9 @@ export default function FoodInfo() {
     setBarcode('');
 
     if (fileInputRef.current) fileInputRef.current.value = ''; 
-  };
+  };*/
 
-  const confirmImageUpload = async () => {
+  /*const confirmImageUpload = async () => {
     if (!pendingFile) return;
     setLoading(true);
     try {
@@ -203,7 +203,7 @@ export default function FoodInfo() {
     } finally {
       setLoading(false);
     }
-  };
+  };*/
 
   const clearPreview = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
