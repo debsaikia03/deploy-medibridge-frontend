@@ -43,7 +43,9 @@ export default function FoodInfo() {
   const [userMetrics] = useState({ age: 30, height: 170, weight: 70 });
   const [notFound, setNotFound] = useState(false);
   const [country, setCountry] = useState('India');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  
+  // REMOVED setPreviewUrl to fix TS6133
+  const [previewUrl] = useState<string | null>(null);
   
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
@@ -56,16 +58,11 @@ export default function FoodInfo() {
     };
   }, [previewUrl]);
 
-  // --- FIXED: Handle Tab Switching & Cleanup ---
   const handleTabChange = async (value: string) => {
     setTab(value as 'name' | 'barcode');
-    
-    // Clear results
     setFoodInfo(null);
     setHealthScore(null);
     setNotFound(false);
-    
-    // Clear inputs
     setFoodName('');
     setBarcode('');
   };
