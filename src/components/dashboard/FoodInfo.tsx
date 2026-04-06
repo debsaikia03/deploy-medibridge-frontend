@@ -118,65 +118,6 @@ export default function FoodInfo() {
     }
   };
 
-  // --- CAMERA SCAN FLOW ---
-  const startScanning = async () => {
-    try {
-      setScanning(true);
-      setPendingBarcode(null);
-      setBarcode('');
-      
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      const devices = await Html5Qrcode.getCameras();
-      if (!devices || devices.length === 0) {
-        toast.error('No camera found on your device');
-        setScanning(false);
-        return;
-      }
-
-      const scanner = new Html5Qrcode("qr-reader");
-      scannerRef.current = scanner;
-      const cameraId = devices.find(device => device.label.toLowerCase().includes('back'))?.id || devices[0].id;
-      
-      await scanner.start(
-        cameraId,
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText: string) => {
-          scanner.stop().catch(console.error);
-          setScanning(false);
-          setPendingBarcode(decodedText);
-        },
-        (errorMessage: string) => {
-          if (!errorMessage.includes('No MultiFormat Readers were able to detect the code')) {
-             // Silently ignore frame drops
-          }
-        }
-      );
-    } catch (err: any) {
-      toast.error('Failed to start camera. Check permissions.');
-      setScanning(false);
-    }
-  };
-
-  const stopScanning = async () => {
-    if (scannerRef.current) {
-      await scannerRef.current.stop().catch(console.error);
-      setScanning(false);
-    }
-  };
-
-  const confirmCameraScan = () => {
-    if (!pendingBarcode) return;
-    const code = pendingBarcode;
-    setPendingBarcode(null);
-    fetchFoodInfo(undefined, code);
-  };
-
-  const cancelCameraScan = () => {
-    setPendingBarcode(null);
-    startScanning(); 
-  };
-
   // --- IMAGE UPLOAD FLOW ---
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
