@@ -3,7 +3,8 @@ import { toast } from 'sonner';
 
 const api = axios.create({
   //baseURL: "https://medi-bridge-backend-r95j.onrender.com/api/v1",
-  baseURL: "https://deploy-medibridge-backend.onrender.com/api/v1",
+  //baseURL: "https://deploy-medibridge-backend.onrender.com/api/v1",
+baseURL:"https://medi-bridge-backend-hthrafcgftbnasgh.centralindia-01.azurewebsites.net/api/v1",
   headers: {
     'Content-Type': 'application/json',
   },
