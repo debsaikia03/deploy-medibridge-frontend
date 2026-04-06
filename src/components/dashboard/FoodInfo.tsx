@@ -67,7 +67,7 @@ export default function FoodInfo() {
     setBarcode('');
   };
 
-  const fetchFoodInfo = async (foodName?: string, codeToSearch?: string, region?: string) => {
+const fetchFoodInfo = async (foodName?: string, codeToSearch?: string, region?: string) => {
     setLoading(true);
     setFoodInfo(null);
     setHealthScore(null);
@@ -83,8 +83,10 @@ export default function FoodInfo() {
       });
       setHealthScore(scoreRes.data.data);
     } catch (err: any) {
+      const status = err.response?.status;
       const data = err.response?.data;
-      if (data?.message === 'Error while fetching food information' && data?.error === 'No product found with the provided barcode or food name') {
+      
+      if (status === 404 || data?.message?.includes('No product found')) {
         setNotFound(true);
       } else {
         toast.error(data?.message || 'Failed to fetch food info');
