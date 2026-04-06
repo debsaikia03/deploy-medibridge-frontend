@@ -37,15 +37,12 @@ export default function FoodInfo() {
   const [tab, setTab] = useState<'name' | 'barcode'>('name');
   const [foodName, setFoodName] = useState('');
   const [barcode, setBarcode] = useState('');
-  const [scanning, setScanning] = useState(false);
   const [foodInfo, setFoodInfo] = useState<FoodInfo | null>(null);
   const [healthScore, setHealthScore] = useState<HealthScore | null>(null);
   const [loading, setLoading] = useState(false);
   const [userMetrics] = useState({ age: 30, height: 170, weight: 70 });
   const [notFound, setNotFound] = useState(false);
   const [country, setCountry] = useState('India');
-  
-  // States for handling confirmations
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -59,7 +56,7 @@ export default function FoodInfo() {
     };
   }, [previewUrl]);
 
-  // --- NEW: Handle Tab Switching & Cleanup ---
+  // --- FIXED: Handle Tab Switching & Cleanup ---
   const handleTabChange = async (value: string) => {
     setTab(value as 'name' | 'barcode');
     
@@ -71,7 +68,8 @@ export default function FoodInfo() {
     // Clear inputs
     setFoodName('');
     setBarcode('');
-    
+  };
+
   const fetchFoodInfo = async (foodName?: string, codeToSearch?: string, region?: string) => {
     setLoading(true);
     setFoodInfo(null);
@@ -101,7 +99,6 @@ export default function FoodInfo() {
 
   return (
     <div className="max-w-2xl mx-auto py-8">
-      {/* Hidden div required by html5-qrcode for file scanning */}
       <div id="file-qr-reader" style={{ display: 'none' }}></div> 
 
       <Card>
@@ -112,7 +109,6 @@ export default function FoodInfo() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* UPDATED: Attach handleTabChange to onValueChange */}
           <Tabs value={tab} onValueChange={handleTabChange} className="mb-4">
             <TabsList className="w-full grid grid-cols-2 mb-4">
               <TabsTrigger value="name">Enter Food Name</TabsTrigger>
@@ -151,7 +147,6 @@ export default function FoodInfo() {
                 }}
                 className="flex flex-col gap-5 mt-4"
               >
-                {/* 1. Custom Region Dropdown */}
                 <div className="flex flex-col gap-2 text-left">
                   <label className="text-sm font-semibold">Region</label>
                   <Select value={country} onValueChange={setCountry}>
@@ -166,7 +161,6 @@ export default function FoodInfo() {
                   </Select>
                 </div>
 
-                {/* 2. Barcode Input */}
                 <div className="flex flex-col gap-2 text-left">
                   <label className="text-sm font-semibold">Barcode Number</label>
                   <Input
@@ -175,7 +169,7 @@ export default function FoodInfo() {
                     pattern="[0-9]*"
                     maxLength={13}
                     value={barcode}
-                    placeholder="Enter a 13-digit GSTIN number"
+                    placeholder="Enter a 13-digit barcode number"
                     onChange={e => {
                       const val = e.target.value;
                       if (val === '' || /^\d{1,13}$/.test(val)) {
@@ -186,7 +180,6 @@ export default function FoodInfo() {
                   />
                 </div>
 
-                {/* 3. Search Button */}
                 <Button 
                   type="submit" 
                   disabled={loading} 
@@ -198,7 +191,6 @@ export default function FoodInfo() {
             </TabsContent>
           </Tabs>
 
-          {/* Results Area */}
           {foodInfo && (
             <Card className="mt-6">
               <CardHeader>
