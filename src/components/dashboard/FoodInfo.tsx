@@ -163,48 +163,6 @@ export default function FoodInfo() {
     }
   };
 
-  const confirmCameraScan = () => {
-    if (!pendingBarcode) return;
-    const code = pendingBarcode;
-    setPendingBarcode(null);
-    fetchFoodInfo(undefined, code);
-  };
-
-  const cancelCameraScan = () => {
-    setPendingBarcode(null);
-    startScanning(); 
-  };
-
-  // --- IMAGE UPLOAD FLOW ---
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPendingFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
-    setBarcode('');
-
-    if (fileInputRef.current) fileInputRef.current.value = ''; 
-  };
-
-  const confirmImageUpload = async () => {
-    if (!pendingFile) return;
-    setLoading(true);
-    try {
-      const scanner = new Html5Qrcode("file-qr-reader"); 
-      const decodedText = await scanner.scanFile(pendingFile, true);
-      
-      clearPreview();
-      toast.success("Barcode found in image!");
-      fetchFoodInfo(undefined, decodedText);
-    } catch (err) {
-      toast.error("Could not find a valid barcode in that image. Try another.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const clearPreview = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPendingFile(null);
