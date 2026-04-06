@@ -72,20 +72,6 @@ export default function FoodInfo() {
     setFoodName('');
     setBarcode('');
     
-    // Clear pending states
-    setPendingFile(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
-    setPendingBarcode(null);
-    
-    // Stop camera if it was running
-    if (scanning) {
-      await stopScanning();
-    }
-  };
-
   const fetchFoodInfo = async (foodName?: string, codeToSearch?: string, region?: string) => {
     setLoading(true);
     setFoodInfo(null);
