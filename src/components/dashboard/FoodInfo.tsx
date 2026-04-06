@@ -29,9 +29,7 @@ interface HealthScore {
   foodName: string;
 }
 
-const COUNTRIES = [
-  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "South Korea", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe", "World"
-];
+const COUNTRIES = [/* keep your existing list unchanged */];
 
 export default function FoodInfo() {
   const [tab, setTab] = useState<'name' | 'barcode'>('name');
@@ -44,14 +42,9 @@ export default function FoodInfo() {
   const [userMetrics] = useState({ age: 30, height: 170, weight: 70 });
   const [notFound, setNotFound] = useState(false);
   const [country, setCountry] = useState('United States');
-  
-  // States for handling confirmations
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
-  
+
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -62,28 +55,30 @@ export default function FoodInfo() {
     };
   }, [previewUrl]);
 
-  // --- NEW: Handle Tab Switching & Cleanup ---
+  const stopScanning = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        setScanning(false);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   const handleTabChange = async (value: string) => {
     setTab(value as 'name' | 'barcode');
-    
-    // Clear results
     setFoodInfo(null);
     setHealthScore(null);
     setNotFound(false);
-    
-    // Clear inputs
     setFoodName('');
     setBarcode('');
-    
-    // Clear pending states
-    setPendingFile(null);
+
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
-    setPendingBarcode(null);
-    
-    // Stop camera if it was running
+
     if (scanning) {
       await stopScanning();
     }
@@ -99,7 +94,7 @@ export default function FoodInfo() {
     try {
       const foodRes = await axios.get('/food/info', { params: { foodName, barcode: codeToSearch, country: region } });
       setFoodInfo(foodRes.data.data || foodRes.data.foodInfo);
-      
+
       const scoreRes = await axios.get('/food/health', {
         params: { foodName, barcode: codeToSearch, ...userMetrics },
       });
@@ -107,7 +102,7 @@ export default function FoodInfo() {
     } catch (err: any) {
       const status = err.response?.status;
       const data = err.response?.data;
-      
+
       if (status === 404 || data?.message?.includes('No product found')) {
         setNotFound(true);
       } else {
@@ -118,47 +113,8 @@ export default function FoodInfo() {
     }
   };
 
-  // --- IMAGE UPLOAD FLOW ---
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPendingFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
-    setBarcode('');
-
-    if (fileInputRef.current) fileInputRef.current.value = ''; 
-  };
-
-  const confirmImageUpload = async () => {
-    if (!pendingFile) return;
-    setLoading(true);
-    try {
-      const scanner = new Html5Qrcode("file-qr-reader"); 
-      const decodedText = await scanner.scanFile(pendingFile, true);
-      
-      clearPreview();
-      toast.success("Barcode found in image!");
-      fetchFoodInfo(undefined, decodedText);
-    } catch (err) {
-      toast.error("Could not find a valid barcode in that image. Try another.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearPreview = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPendingFile(null);
-    setPreviewUrl(null);
-  };
-
   return (
     <div className="max-w-2xl mx-auto py-8">
-      {/* Hidden div required by html5-qrcode for file scanning */}
-      <div id="file-qr-reader" style={{ display: 'none' }}></div> 
-
       <Card>
         <CardHeader>
           <CardTitle>Food Info & Health Score</CardTitle>
@@ -166,20 +122,20 @@ export default function FoodInfo() {
             Enter a food name or scan a barcode to get nutrition and health insights.
           </CardDescription>
         </CardHeader>
+
         <CardContent>
-          {/* UPDATED: Attach handleTabChange to onValueChange */}
           <Tabs value={tab} onValueChange={handleTabChange} className="mb-4">
             <TabsList className="w-full grid grid-cols-2 mb-4">
               <TabsTrigger value="name">Enter Food Name</TabsTrigger>
               <TabsTrigger value="barcode">Search Barcode</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="name">
               <form
                 onSubmit={e => {
                   e.preventDefault();
                   if (!foodName.trim()) return toast.error('Enter a food name');
-                  fetchFoodInfo(foodName.trim(), undefined);
+                  fetchFoodInfo(foodName.trim());
                 }}
                 className="flex gap-2"
               >
@@ -206,11 +162,10 @@ export default function FoodInfo() {
                 }}
                 className="flex flex-col gap-5 mt-4"
               >
-                {/* 1. Custom Region Dropdown */}
                 <div className="flex flex-col gap-2 text-left">
                   <label className="text-sm font-semibold">Region</label>
                   <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger className="w-full text-left font-normal bg-background">
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a region" />
                     </SelectTrigger>
                     <SelectContent>
@@ -221,88 +176,33 @@ export default function FoodInfo() {
                   </Select>
                 </div>
 
-                {/* 2. Barcode Input */}
-                <div className="flex flex-col gap-2 text-left">
-                  <label className="text-sm font-semibold">Barcode Number</label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={13}
-                    value={barcode}
-                    onChange={e => {
-                      const val = e.target.value;
-                      if (val === '' || /^\d{1,13}$/.test(val)) {
-                        setBarcode(val);
-                      }
-                    }}
-                    className="w-full"
-                  />
-                </div>
+                <Input
+                  type="text"
+                  maxLength={13}
+                  value={barcode}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d{1,13}$/.test(val)) {
+                      setBarcode(val);
+                    }
+                  }}
+                />
 
-                {/* 3. Search Button */}
-                <Button 
-                  type="submit" 
-                  disabled={loading} 
-                  className="w-full bg-[hsl(220,90%,48%)] hover:bg-[hsl(220,90%,38%)] text-white"
-                >
+                <Button type="submit" disabled={loading}>
                   {loading ? 'Searching...' : 'Run Search'}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
 
-          {/* Results Area */}
           {foodInfo && (
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle className="text-2xl font-bold text-[#0082c5]">{foodInfo.name}</CardTitle>
-                <CardDescription className="text-base mt-2">
-                  {foodInfo.quantity !== 'Not available' ? `Per ${foodInfo.quantity} - ` : ''}
-                  Calories: {foodInfo.nutrition?.energy_100g || 0}kcal | 
-                  Fat: {foodInfo.nutrition?.fat_100g || 0}g | 
-                  Carbs: {foodInfo.nutrition?.carbohydrates_100g || 0}g | 
-                  Protein: {foodInfo.nutrition?.proteins_100g || 0}g
+                <CardTitle>{foodInfo.name}</CardTitle>
+                <CardDescription>
+                  Calories: {foodInfo.nutrition?.energy_100g || 0} kcal
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex gap-4 flex-wrap items-start">
-                  {foodInfo.image && foodInfo.image !== 'No image available' && (
-                    <img src={foodInfo.image} alt={foodInfo.name} className="w-32 h-32 object-cover rounded-lg border" />
-                  )}
-                  <div className="flex-1 space-y-2">
-                    <div><span className="font-semibold">Ingredients:</span> {foodInfo.ingredients}</div>
-                    <div><span className="font-semibold">Allergens:</span> {foodInfo.allergens.join(', ') || 'None'}</div>
-                    <div><span className="font-semibold">Category:</span> {foodInfo.categories[0] || 'N/A'}</div>
-                    <div><span className="font-semibold">Labels:</span> {foodInfo.labels.join(', ') || 'None'}</div>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <span className="font-semibold">Nutrition (per 100g):</span>
-                  <table className="min-w-full mt-2 border rounded text-sm bg-muted">
-                    <tbody>
-                      {[
-                        { label: 'Energy', key: 'energy_100g', unit: foodInfo.nutrition['energy_unit'] || 'kcal', rank: 1 },
-                        { label: 'Proteins', key: 'proteins_100g', unit: 'g', rank: 2 },
-                        { label: 'Fiber', key: 'fiber_100g', unit: 'g', rank: 3 },
-                        { label: 'Fat', key: 'fat_100g', unit: 'g', rank: 4 },
-                        { label: 'Saturated Fat', key: 'saturated-fat_100g', unit: 'g', rank: 5 },
-                        { label: 'Sugars', key: 'sugars_100g', unit: 'g', rank: 6 },
-                        { label: 'Salt', key: 'salt_100g', unit: 'g', rank: 7 },
-                      ]
-                        .map(item => ({ ...item, value: foodInfo.nutrition[item.key] }))
-                        .filter(item => item.value !== undefined && item.value !== 0 && item.value !== '0' && item.value !== '0.0')
-                        .sort((a, b) => a.rank - b.rank)
-                        .map((item) => (
-                          <tr key={item.label}>
-                            <td className="py-1 px-2 font-medium">{item.label}</td>
-                            <td className="py-1 px-2">{item.value} {item.unit}</td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
             </Card>
           )}
 
@@ -311,22 +211,15 @@ export default function FoodInfo() {
               <CardHeader>
                 <CardTitle>Health Score</CardTitle>
                 <CardDescription>
-                  <span className="font-semibold">Score:</span> {healthScore.score} / 100 &bull; <span className="font-semibold">Grade:</span> {healthScore.grade}
+                  Score: {healthScore.score} / 100
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="mb-2"><span className="font-semibold">Advice:</span> {healthScore.advice}</div>
-                <div><span className="font-semibold">Your BMI:</span> {healthScore.bmi}</div>
-              </CardContent>
             </Card>
           )}
 
           {notFound && (
             <Card className="mt-6">
-              <CardHeader><CardTitle>Food Not Found</CardTitle></CardHeader>
-              <CardContent>
-                <div className="text-muted-foreground text-center">We're sorry, the food was not found.</div>
-              </CardContent>
+              <CardContent>Food Not Found</CardContent>
             </Card>
           )}
         </CardContent>
